@@ -28,7 +28,13 @@ __無保証__ です。
 暗号通貨を買います。買った値段の[1.0005]倍の価格で売ります。この動きを繰り返すだけの簡単な仕組みです。
 
 ## 使い方
-apikey.yamlにbitbankのAPIキーを設定して、mnn.rbを実行してください
+apikey.yamlというファイルを作成して、bitbankのAPIキーを設定して、mnn.rbを実行してください
+
+下記にapikey.yamlのサンプルを示します。
+~~~yaml
+apikey: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+seckey: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+~~~
 
 ## 注意事項
 無保証です。
