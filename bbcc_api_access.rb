@@ -9,6 +9,48 @@ require 'ruby_bitbankcc'
 # relateve file
 require_relative 'bbcc_info.rb'
 
+# Que class
+class Que
+  public def initialize
+    @lock = Mutex.new
+    @que = [] # empty array
+  end
+  # take top item
+  public def peek
+    loop do
+      redo if @que.empty?
+      @lock.synchronize do
+        return @que[0]
+      end
+    end
+  end
+  # add item
+  public def push(item)
+    @lock.synchronize do
+      @que.push(item)
+    end
+  end
+  # del item
+  public def shift
+    @lock.synchronize do
+      @que.shift
+    end
+  end
+end
+
+# ResQue class
+class ResQue < Que
+  public def take_res(objid)
+    loop do
+      ret = nil
+      @lock.synchronize { ret = @que.select { |res| res[:objid] == objid } }
+      redo if ret.empty?
+      @lock.synchronize { @que.reject! { |res| res[:objid] == objid } }
+      return ret # return ret
+    end
+  end
+end
+
 # bitbank api acces class
 class BbccAPIAccess
   # constractor
@@ -17,45 +59,39 @@ class BbccAPIAccess
     @bbcc = Bitbankcc.new(config_api_key['apikey'], config_api_key['seckey'])
     @randomwait_st = randomwait_st
     @randomwait_ed = randomwait_ed
-    @req_lock = Mutex.new
-    @res_lock = Mutex.new
-    @res_idlock = Mutex.new
-    @req_que = [] # empty array
-    @res_que = [] # empty arra
-    @res_id = [] # empty arra
+    init_que
     thread_start
+  end
+
+  private def init_que
+    @req_que = Que.new
+    @res_que = ResQue.new
+  end
+
+  private def do_method(method)
+    res = nil
+    case method
+    when READ_BALANCE then
+      res = read_balance
+    else
+      exit(-1)
+    end
+    res # return res
   end
 
   private def thread_start
     @mythread = Thread.start do
       loop do
         # search request
-        tmp_req_que = nil
-        @req_lock.synchronize do
-          tmp_req_que = @req_que[0] unless @req_que.empty?
-        end
-        redo if tmp_req_que.nil?
+        tmp_req_que = @req_que.peek
 
         # found reques, do method
-        res = nil
-        case tmp_req_que[:method]
-        when READ_BALANCE then
-          res = read_balance
-        else
-          exit(-1)
-        end
+        res = do_method(tmp_req_que[:method])
 
-        # add responce, del res_que
+        # add responce, del req_que
         tmphash = { objid: tmp_req_que[:objid], res: res }
-        @res_lock.synchronize do
-          @res_que.push(tmphash)
-        end
-        @res_idlock.synchronize do
-          @res_id.push(tmp_req_que[:objid])
-        end
-        @req_lock.synchronize do
-          @req_que.shift
-        end
+        @res_que.push(tmphash)
+        @req_que.shift
       end
     end
   end
@@ -112,37 +148,17 @@ class BbccAPIAccess
   end
 
   private def add_request(request_hash)
-    @req_lock.synchronize do
-      @req_que.push(request_hash)
-    end
+    @req_que.push(request_hash)
   end
 
-  private def wait_method(objid)
-    loop do
-      redo unless @res_id.include?(objid)
-      @res_idlock.synchronize do
-        @res_id.delete(objid)
-      end
-      idx = 0
-      ret_res = nil
-      @res_lock.synchronize do
-        @res_que.each do |one_res|
-          if one_res[:objid] == objid
-            ret_res = one_res
-            break
-          end
-          idx += 1
-        end
-        @res_que.delete_at(idx)
-      end
-      return ret_res
-    end
+  private def take_res(objid)
+    @res_que.take_res(objid)
   end
 
   # add resuest to que
   public def request_read_balance(objid)
     tmphash = { objid: objid, method: READ_BALANCE }
     add_request(tmphash)
-    wait_method(objid)
+    take_res(objid)
   end
 end
