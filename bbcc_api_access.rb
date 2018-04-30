@@ -12,36 +12,59 @@ require_relative 'bbcc_info.rb'
 # bitbank api acces class
 class BbccAPIAccess
   # constractor
-  def initialize
+  public def initialize(randomwait_st, randomwait_ed)
     config_api_key = YAML.load_file('apikey.yaml')
     @bbcc = Bitbankcc.new(config_api_key['apikey'], config_api_key['seckey'])
+    @randomwait_st = randomwait_st
+    @randomwait_ed = randomwait_ed
   end
 
-  # raw read balance without retry
-  def raw_read_balance
+  # random wait
+  private def random_wait
+    # wait in @randomwait_st[sec] - @randomwait_ed[sec]
+    sleep(@randomwait_st + @random.rand(@randomwait_ed - @randomwait_st))
+  end
+
+  ##########
+  # balance
+  ##########
+
+  private def api_read_balance
     JSON.parse(@bbcc.read_balance)
   rescue StandardError => exception
     LOG.fatal(object_id, self.class.name, __method__, exception.to_s)
-    nil # retruen(nil)
+    nil # return nil
   end
 
-  # read balance
-  def read_balance
-    return nil if (res = raw_read_balance).nil?
-    return nil unless res['success'] == 1
+  private def retry_read_balance
+    res = nil
+    loop do
+      res = api_read_balance
+      break unless res.nil?
+      random_sleep
+    end
+    res # return res
+  end
 
-    # save balance to hash (usage: barance['jpy']['free_amount'])
-    balance = Hash.new { |h, k| h[k] = {} }
+  private def http_read_balance
+    res = retry_read_balance
+    if res['success'] != 1
+      errstr = "bbcc.read_balance() not success. code=#{res['data']['code']}"
+      LOG.error(object_id, self.class.name, __method__, errstr)
+      return nil
+    end
+    res # return res
+  end
 
-    # convert res to balance hash
+  public def read_balance
+    ret = Hash.new { |h, k| h[k] = {} }
+    res = http_read_balance
+    return ret if res.nil?
     res['data']['assets'].each do |one_asset|
-      currency_name = one_asset['asset']
       one_asset.each do |key, val|
-        balance[currency_name][key] = val unless key == 'asset'
+        ret[one_asset['asset']][key] = val if key != 'asset'
       end
     end
-
-    # retrun my barance
-    balance # retrun(balance)
+    ret # return ret
   end
 end

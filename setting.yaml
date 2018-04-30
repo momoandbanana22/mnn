@@ -2,3 +2,8 @@
 log:
   enable: true
   filepath: "mnn_log.log"
+
+# API アクセス待時間（start秒〜end秒間アクセス待する）
+random:
+  start: 1
+  end:  3

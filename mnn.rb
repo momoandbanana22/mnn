@@ -1,4 +1,4 @@
-PROGRAM_VERSION = 'ver.20180408_1900'.freeze
+PROGRAM_VERSION = 'ver.20180430_1707'.freeze
 PROGRAM_NAME = 'mnn'.freeze
 
 # standerd library require
@@ -8,12 +8,13 @@ require 'logger'
 require_relative 'bbcc_api_access.rb'
 require_relative 'mnn_log.rb'
 
-# read setting.yaml filr
-SETTING = YAML.load_file('setting.yaml')
+# read setting.yaml file
+SETTING_YAML = 'setting.yaml'.freeze
+setting = YAML.load_file(SETTING_YAML)
 
 # global log file
-LOG = MnnLog.new(SETTING['log']['filepath'])
-LOG.enable = SETTING['log']['enable']
+LOG = MnnLog.new(setting['log']['filepath'])
+LOG.enable = setting['log']['enable']
 
 # write info of prgram start.
 LOG.info(object_id, 'main', 'main', (PROGRAM_NAME + ' ' + PROGRAM_VERSION))
@@ -21,22 +22,25 @@ LOG.info(object_id, 'main', 'main', (PROGRAM_NAME + ' ' + PROGRAM_VERSION))
 # the 'mnn' , main class
 class Mnn
   # constractor
-  def initialize
-    @bbcc_api = BbccAPIAccess.new
+  public def initialize
+    read_setting
+    @bbcc = BbccAPIAccess.new(@random_start, @random_end)
+    @random = Random.new
   end
 
-  # read balance
-  def read_balance
-    @balance = @bbcc_api.read_balance
+  # read setting.yaml
+  public def read_setting
+    # read setting.yaml file
+    setting = YAML.load_file(SETTING_YAML)
+    @random_start = setting['random']['start']
+    @random_end = setting['random']['end']
+  end
+
+  public def start
+    @bbcc.read_balance
   end
 end
 
-# test code for API access
+# test code
 mnn = Mnn.new
-
-loop do
-  tmp = mnn.read_balance
-  redo if tmp.nil?
-  pp tmp
-  break # exit loop
-end
+puts mnn.start
