@@ -1,4 +1,4 @@
-PROGRAM_VERSION = 'ver.20180430_1707'.freeze
+PROGRAM_VERSION = 'ver.20180430_1844'.freeze
 PROGRAM_NAME = 'mnn'.freeze
 
 # standerd library require
@@ -37,10 +37,16 @@ class Mnn
   end
 
   public def start
-    @bbcc.read_balance
+    ret = @bbcc.request_read_balance(object_id)
+    puts ret
   end
 end
 
 # test code
 mnn = Mnn.new
 puts mnn.start
+
+# run another thread.
+loop do
+  sleep(1)
+end
