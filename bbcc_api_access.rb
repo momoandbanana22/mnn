@@ -83,13 +83,14 @@ class BbccAPIAccess
     @mythread = Thread.start do
       loop do
         # search request
-        tmp_req_que = @req_que.peek
+        tmp_req = @req_que.peek
 
         # found reques, do method
-        res = do_method(tmp_req_que[:method])
+        res = do_method(tmp_req[:method])
 
         # add responce, del req_que
-        tmphash = { objid: tmp_req_que[:objid], res: res }
+        tmphash = { res_time: Time.now.to_f, req_time: tmp_req[:req_time],
+                    objid: tmp_req[:objid], res: res }
         @res_que.push(tmphash)
         @req_que.shift
       end
@@ -157,7 +158,8 @@ class BbccAPIAccess
 
   # add resuest to que
   public def request_read_balance(objid)
-    tmphash = { objid: objid, method: READ_BALANCE }
+    tmphash = { req_time: Time.now.to_f, objid: objid,
+                method: READ_BALANCE }
     add_request(tmphash)
     take_res(objid)
   end
