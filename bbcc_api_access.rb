@@ -68,11 +68,13 @@ class BbccAPIAccess
     @res_que = ResQue.new
   end
 
-  private def do_method(method)
+  private def do_method(req)
     res = nil
-    case method
+    case req[:method]
     when READ_BALANCE then
       res = read_balance
+    when ORDER then
+      res = create_order(req[:orderinfo])
     else
       exit(-1)
     end
@@ -86,7 +88,7 @@ class BbccAPIAccess
         tmp_req = @req_que.peek
 
         # found reques, do method
-        res = do_method(tmp_req[:method])
+        res = do_method(tmp_req)
 
         # add responce, del req_que
         tmphash = { res_time: Time.now.to_f, req_time: tmp_req[:req_time],
@@ -97,10 +99,26 @@ class BbccAPIAccess
     end
   end
 
-  # random wait
   private def random_wait
     # wait in @randomwait_st[sec] - @randomwait_ed[sec]
     sleep(@randomwait_st + @random.rand(@randomwait_ed - @randomwait_st))
+  end
+
+  private def add_request(request_hash)
+    @req_que.push(request_hash)
+  end
+
+  private def take_res(objid)
+    @res_que.take_res(objid)
+  end
+
+  private def numeric?(value)
+    return true if value.is_a?(Numeric)
+    return true if Integer(value)
+    return true if Float(value)
+    false # return false
+  rescue StandardError
+    false # return false
   end
 
   ##########
@@ -131,7 +149,7 @@ class BbccAPIAccess
     if res['success'] != 1
       errstr = "bbcc.read_balance() not success. code=#{res['data']['code']}"
       LOG.error(object_id, self.class.name, __method__, errstr)
-      return nil
+      return res['data']['code'].to_i
     end
     res # return res
   end
@@ -139,7 +157,7 @@ class BbccAPIAccess
   private def read_balance
     ret = Hash.new { |h, k| h[k] = {} }
     res = http_read_balance
-    return ret if res.nil?
+    return res if numeric?(res)
     res['data']['assets'].each do |one_asset|
       one_asset.each do |key, val|
         ret[one_asset['asset']][key] = val if key != 'asset'
@@ -148,18 +166,63 @@ class BbccAPIAccess
     ret # return ret
   end
 
-  private def add_request(request_hash)
-    @req_que.push(request_hash)
-  end
-
-  private def take_res(objid)
-    @res_que.take_res(objid)
-  end
-
-  # add resuest to que
   public def request_read_balance(objid)
     tmphash = { req_time: Time.now.to_f, objid: objid,
                 method: READ_BALANCE }
+    add_request(tmphash)
+    take_res(objid)
+  end
+
+  ########
+  # order
+  ########
+
+  ORDER = 'order'.freeze
+
+  private def api_create_order(orderinfo)
+    JSON.parse(@bbcc.create_order(orderinfo[:target_pair], orderinfo[:amount],
+                                  orderinfo[:price], orderinfo[:side],
+                                  orderinfo[:type]))
+  rescue StandardError => exception
+    LOG.fatal(object_id, self.class.name, __method__, exception.to_s)
+    nil # return nil
+  end
+
+  private def retry_create_order(orderinfo)
+    res = nil
+    loop do
+      res = api_create_order(orderinfo)
+      break unless res.nil?
+      random_sleep
+    end
+    res # return res
+  end
+
+  private def http_create_order(orderinfo)
+    res = retry_create_order(orderinfo)
+    if res['success'] != 1
+      errstr = "bbcc.create_order() not success. code=#{res['data']['code']}"
+      LOG.error(object_id, self.class.name, __method__, errstr)
+      return res['data']['code'].to_i
+    end
+    res # return res
+  end
+
+  private def create_order(orderinfo)
+    ret = {}
+    res = http_create_order(orderinfo)
+    return res if numeric?(res)
+    res['data'].each do |key, val|
+      ret[key] = val if key != 'success'
+    end
+    ret # return ret
+  end
+
+  public def request_buy(objid, target_pair, amount, price)
+    orderinfo = { target_pair: target_pair, amount: amount, pirce: price,
+                  side: 'buy', type: 'limit' }
+    tmphash = { req_time: Time.now.to_f, objid: objid,
+                method: ORDER, orderinfo: orderinfo }
     add_request(tmphash)
     take_res(objid)
   end
