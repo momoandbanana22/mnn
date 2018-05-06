@@ -59,6 +59,7 @@ class BbccAPIAccess
     @bbcc = Bitbankcc.new(config_api_key['apikey'], config_api_key['seckey'])
     @randomwait_st = randomwait_st
     @randomwait_ed = randomwait_ed
+    @random = Random.new
     init_que
     thread_start
   end
@@ -77,6 +78,8 @@ class BbccAPIAccess
       res = create_order(req[:orderinfo])
     when READ_ACTIVE_ORDERS then
       res = read_active_orders(req[:target_pair])
+    when GET_PRICE then
+      res = get_price(req[:target_pair])
     else
       exit(-1)
     end
@@ -115,9 +118,9 @@ class BbccAPIAccess
   end
 
   private def numeric?(value)
-    return true if value.is_a?(Numeric)
-    return true if Integer(value)
-    return true if Float(value)
+    return(true) if value.is_a?(Numeric)
+    return(true) if Integer(value)
+    return(true) if Float(value)
     false # return false
   rescue StandardError
     false # return false
@@ -140,29 +143,26 @@ class BbccAPIAccess
     res = nil
     loop do
       res = api_read_balance
-      break unless res.nil?
-      random_sleep
+      return res unless res.nil?
+      random_wait
     end
-    res # return res
   end
 
   private def http_read_balance
     res = retry_read_balance
-    if res['success'] != 1
-      errstr = "bbcc.read_balance() not success. code=#{res['data']['code']}"
-      LOG.error(object_id, self.class.name, __method__, errstr)
-      return res['data']['code'].to_i
-    end
-    res # return res
+    return(res) if res['success'] == 1
+    erstr = "bbcc.read_balance() not success. code=#{res['data']['code']}"
+    LOG.error(object_id, self.class.name, __method__, erstr)
+    res['data']['code'].to_i # return res['data']['code'].to_i
   end
 
   private def read_balance
     ret = Hash.new { |h, k| h[k] = {} }
     res = http_read_balance
-    return res if numeric?(res)
+    return(res) if numeric?(res)
     res['data']['assets'].each do |one_asset|
       one_asset.each do |key, val|
-        ret[one_asset['asset']][key] = val if key != 'asset'
+        (ret[one_asset['asset']][key] = val) if key != 'asset'
       end
     end
     ret # return ret
@@ -194,34 +194,31 @@ class BbccAPIAccess
     res = nil
     loop do
       res = api_create_order(orderinfo)
-      break unless res.nil?
-      random_sleep
+      return res unless res.nil?
+      random_wait
     end
-    res # return res
   end
 
   private def http_create_order(orderinfo)
     res = retry_create_order(orderinfo)
-    if res['success'] != 1
-      errstr = "bbcc.create_order() not success. code=#{res['data']['code']}"
-      LOG.error(object_id, self.class.name, __method__, errstr)
-      return res['data']['code'].to_i
-    end
-    res # return res
+    return(res) if res['success'] == 1
+    erstr = "bbcc.create_order() not success. code=#{res['data']['code']}"
+    LOG.error(object_id, self.class.name, __method__, erstr)
+    res['data']['code'].to_i # return res['data']['code'].to_i
   end
 
   private def create_order(orderinfo)
     ret = {}
     res = http_create_order(orderinfo)
-    return res if numeric?(res)
+    return(res) if numeric?(res)
     res['data'].each do |key, val|
-      ret[key] = val if key != 'success'
+      (ret[key] = val) if key != 'success'
     end
     ret # return ret
   end
 
   public def request_buy(objid, target_pair, amount, price)
-    orderinfo = { target_pair: target_pair, amount: amount, pirce: price,
+    orderinfo = { target_pair: target_pair, amount: amount, price: price,
                   side: 'buy', type: 'limit' }
     tmphash = { req_time: Time.now.to_f, objid: objid,
                 method: ORDER, orderinfo: orderinfo }
@@ -246,29 +243,25 @@ class BbccAPIAccess
     res = nil
     loop do
       res = api_read_active_orders(target_pair)
-      break unless res.nil?
-      random_sleep
+      return res unless res.nil?
+      random_wait
     end
-    res # return res
   end
 
   private def http_read_active_orders(target_pair)
     res = retry_read_active_orders(target_pair)
-    if res['success'] != 1
-      errstr = 'bbcc.read_active_orders() not success. '
-      errstr += "code=#{res['data']['code']}"
-      LOG.error(object_id, self.class.name, __method__, errstr)
-      return res['data']['code'].to_i
-    end
-    res # return res
+    return res if res['success'] == 1
+    erstr = "bbcc.read_active_orders() not success. code=#{res['data']['code']}"
+    LOG.error(object_id, self.class.name, __method__, erstr)
+    res['data']['code'].to_i # return res['data']['code'].to_i
   end
 
   private def read_active_orders(target_pair)
     ret = {}
     res = http_read_active_orders(target_pair)
-    return res if numeric?(res)
+    return(res) if numeric?(res)
     res['data'].each do |key, val|
-      ret[key] = val if key != 'success'
+      (ret[key] = val) if key != 'success'
     end
     ret # return ret
   end
@@ -276,7 +269,82 @@ class BbccAPIAccess
   public def request_read_active_orders(objid, orderd_info)
     tmphash = { req_time: Time.now.to_f, objid: objid,
                 method: READ_ACTIVE_ORDERS,
-                target_pair: orderd_info[:target_pair] }
+                target_pair: orderd_info['pair'] }
+    add_request(tmphash)
+    take_res(objid)
+  end
+
+  public def contract?(objid, orderd_info)
+    ret = request_read_active_orders(objid, orderd_info)
+    return(false) if numeric?(ret[:res])
+    ret[:res]['orders'].each do |one_order|
+      next unless one_order['order_id'] == orderd_info['order_id']
+      next unless one_order['pair'] == orderd_info['pair']
+      return(true) if one_order['status'] == 'FULLY_FILLED'
+      return(false) # if one_order['status'] == 'PARTIALLY_FILLED'
+    end
+    true # retur true # not found = not active order
+  end
+
+  public def wait_contruct(objid, orderd_info)
+    loop do
+      return if contract?(objid, orderd_info)
+    end
+  end
+
+  ############
+  # get_price
+  ############
+
+  GET_PRICE = 'get_price'.freeze
+
+  private def api_get_price(target_pair)
+    JSON.parse(@bbcc.read_ticker(target_pair))
+  rescue StandardError => exception
+    LOG.fatal(object_id, self.class.name, __method__, exception.to_s)
+    nil # return nil
+  end
+
+  private def retry_get_price(target_pair)
+    res = nil
+    loop do
+      res = api_get_price(target_pair)
+      return res unless res.nil?
+      random_wait
+    end
+  end
+
+  private def http_get_price(target_pair)
+    res = retry_get_price(target_pair)
+    return(res) if res['success'] == 1
+    erstr = "bbcc.read_ticker() not success. code=#{res['data']['code']}"
+    LOG.error(object_id, self.class.name, __method__, erstr)
+    res['data']['code'].to_i # return res['data']['code'].to_i
+  end
+
+  private def get_price(target_pair)
+    ret = {}
+    res = http_get_price(target_pair)
+    return(res) if numeric?(res)
+    res['data'].each do |key, val|
+      (ret[key] = val) if key != 'success'
+    end
+    ret # return ret
+  end
+
+  public def request_get_price(objid, target_pair)
+    tmphash = { req_time: Time.now.to_f, objid: objid,
+                method: GET_PRICE,
+                target_pair: target_pair }
+    add_request(tmphash)
+    take_res(objid)
+  end
+
+  public def request_sell(objid, target_pair, amount, price)
+    orderinfo = { target_pair: target_pair, amount: amount, price: price,
+                  side: 'sell', type: 'limit' }
+    tmphash = { req_time: Time.now.to_f, objid: objid,
+                method: ORDER, orderinfo: orderinfo }
     add_request(tmphash)
     take_res(objid)
   end
