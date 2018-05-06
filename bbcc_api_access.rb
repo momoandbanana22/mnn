@@ -229,9 +229,9 @@ class BbccAPIAccess
     take_res(objid)
   end
 
-  ####################
-  # read active order
-  ####################
+  #####################
+  # read active orders
+  #####################
 
   READ_ACTIVE_ORDERS = 'read_active_orders'.freeze
 
