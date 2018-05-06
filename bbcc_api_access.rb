@@ -46,7 +46,7 @@ class ResQue < Que
       @lock.synchronize { ret = @que.select { |res| res[:objid] == objid } }
       redo if ret.empty?
       @lock.synchronize { @que.reject! { |res| res[:objid] == objid } }
-      return ret # return ret
+      return ret[0] # return ret[0]
     end
   end
 end
@@ -75,6 +75,8 @@ class BbccAPIAccess
       res = read_balance
     when ORDER then
       res = create_order(req[:orderinfo])
+    when READ_ACTIVE_ORDERS then
+      res = read_active_orders(req[:target_pair])
     else
       exit(-1)
     end
@@ -223,6 +225,58 @@ class BbccAPIAccess
                   side: 'buy', type: 'limit' }
     tmphash = { req_time: Time.now.to_f, objid: objid,
                 method: ORDER, orderinfo: orderinfo }
+    add_request(tmphash)
+    take_res(objid)
+  end
+
+  ####################
+  # read active order
+  ####################
+
+  READ_ACTIVE_ORDERS = 'read_active_orders'.freeze
+
+  private def api_read_active_orders(target_pair)
+    JSON.parse(@bbcc.read_active_orders(target_pair))
+  rescue StandardError => exception
+    LOG.fatal(object_id, self.class.name, __method__, exception.to_s)
+    nil # return nil
+  end
+
+  private def retry_read_active_orders(target_pair)
+    res = nil
+    loop do
+      res = api_read_active_orders(target_pair)
+      break unless res.nil?
+      random_sleep
+    end
+    res # return res
+  end
+
+  private def http_read_active_orders(target_pair)
+    res = retry_read_active_orders(target_pair)
+    if res['success'] != 1
+      errstr = 'bbcc.read_active_orders() not success. '
+      errstr += "code=#{res['data']['code']}"
+      LOG.error(object_id, self.class.name, __method__, errstr)
+      return res['data']['code'].to_i
+    end
+    res # return res
+  end
+
+  private def read_active_orders(target_pair)
+    ret = {}
+    res = http_read_active_orders(target_pair)
+    return res if numeric?(res)
+    res['data'].each do |key, val|
+      ret[key] = val if key != 'success'
+    end
+    ret # return ret
+  end
+
+  public def request_read_active_orders(objid, orderd_info)
+    tmphash = { req_time: Time.now.to_f, objid: objid,
+                method: READ_ACTIVE_ORDERS,
+                target_pair: orderd_info[:target_pair] }
     add_request(tmphash)
     take_res(objid)
   end

@@ -1,4 +1,4 @@
-PROGRAM_VERSION = 'ver.20180505_1149'.freeze
+PROGRAM_VERSION = 'ver.20180506_1317'.freeze
 PROGRAM_NAME = 'mnn'.freeze
 
 # standerd library require
@@ -40,6 +40,9 @@ class Mnn
     ret = @bbcc.request_read_balance(object_id)
     puts ret
     ret = @bbcc.request_buy(object_id, 'btc_jpy', 100_000_000, 100_000_000)
+    puts ret
+    dmy = { target_pair: 'btc_jpy' }
+    ret = @bbcc.request_read_active_orders(object_id, dmy)
     puts ret
   end
 end
