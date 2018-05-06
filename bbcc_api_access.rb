@@ -80,6 +80,8 @@ class BbccAPIAccess
       res = read_active_orders(req[:target_pair])
     when GET_PRICE then
       res = get_price(req[:target_pair])
+    when CANCEL_ORDER then
+      res = cancel_order(req[:target_pair], req[:order_id])
     else
       exit(-1)
     end
@@ -345,6 +347,50 @@ class BbccAPIAccess
                   side: 'sell', type: 'limit' }
     tmphash = { req_time: Time.now.to_f, objid: objid,
                 method: ORDER, orderinfo: orderinfo }
+    add_request(tmphash)
+    take_res(objid)
+  end
+
+  ###############
+  # cancel order
+  ###############
+
+  CANCEL_ORDER = 'cancel_order'.freeze
+
+  private def api_cancel_order(target_pair, order_id)
+    JSON.parse(@bbcc.cancel_order(target_pair, order_id))
+  rescue StandardError => exception
+    LOG.fatal(object_id, self.class.name, __method__, exception.to_s)
+    nil # return nil
+  end
+
+  private def retry_cancel_order(target_pair, order_id)
+    res = nil
+    loop do
+      res = api_cancel_order(target_pair, order_id)
+      return res unless res.nil?
+      random_wait
+    end
+  end
+
+  private def http_cancel_order(target_pair, order_id)
+    res = retry_cancel_order(target_pair, order_id)
+    return(res) if res['success'] == 1
+    erstr = "bbcc.cancel_order() not success. code=#{res['data']['code']}"
+    LOG.error(object_id, self.class.name, __method__, erstr)
+    res['data']['code'].to_i # return res['data']['code'].to_i
+  end
+
+  private def cancel_order(target_pair, order_id)
+    res = http_cancel_order(target_pair, order_id)
+    return(false) if numeric?(res)
+    true # return(true)
+  end
+
+  public def request_cancel_order(objid, orderd_info)
+    tmphash = { req_time: Time.now.to_f, objid: objid, method: CANCEL_ORDER,
+                target_pair: orderd_info['pair'],
+                order_id: orderd_info['order_id'] }
     add_request(tmphash)
     take_res(objid)
   end

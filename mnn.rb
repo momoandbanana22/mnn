@@ -1,4 +1,4 @@
-PROGRAM_VERSION = 'ver.20180506_1731'.freeze
+PROGRAM_VERSION = 'ver.20180506_2218'.freeze
 PROGRAM_NAME = 'mnn'.freeze
 
 # standerd library require
@@ -36,6 +36,10 @@ class Mnn
   end
 
   public def start
+
+    ret = @bbcc.request_buy(object_id, 'btc_jpy', 0.0001, 800_000)
+    ret = @bbcc.request_cancel_order(object_id, ret[:res])
+ 
     ret = @bbcc.request_read_balance(object_id)
     puts ret
     ret = @bbcc.request_get_price(object_id, 'btc_jpy')
