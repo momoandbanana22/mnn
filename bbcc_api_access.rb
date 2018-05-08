@@ -17,6 +17,13 @@ class Que
   end
   # take top item
   public def peek
+    return(nil) if @que.empty?
+    @lock.synchronize do
+      return @que[0]
+    end
+  end
+  # take top item with wait
+  public def peek_wait
     loop do
       redo if @que.empty?
       @lock.synchronize do
@@ -53,6 +60,10 @@ end
 
 # bitbank api acces class
 class BbccAPIAccess
+  # values for get_price target_pair
+  attr_accessor :target_pairs
+  attr_accessor :price_memory
+
   # constractor
   public def initialize(randomwait_st, randomwait_ed)
     config_api_key = YAML.load_file('apikey.yaml')
@@ -60,6 +71,8 @@ class BbccAPIAccess
     @randomwait_st = randomwait_st
     @randomwait_ed = randomwait_ed
     @random = Random.new
+    @target_pairs = []
+    @price_memory = {}
     init_que
     thread_start
   end
@@ -88,11 +101,35 @@ class BbccAPIAccess
     res # return res
   end
 
+  # add pair for get_price
+  public def add_pair(pair)
+    @target_pairs.push(pair)
+  end
+
+  # get next pair for get_price/memory_price
+  private def next_pair_for_memory_price
+    return(nil) if @target_pairs.nil?
+    @current_pair_for_inc_pair = 0 if @current_pair_for_inc_pair.nil?
+    @current_pair_for_inc_pair = 0 if @target_pairs.size <= @current_pair_for_inc_pair
+    ret = @target_pairs[@current_pair_for_inc_pair]
+    @current_pair_for_inc_pair += 1
+    ret # return(ret)
+  end
+
+  private def memory_price(pair)
+    return if pair.nil?
+    @price_memory[pair] = get_price(pair)
+  end
+
   private def thread_start
     @mythread = Thread.start do
       loop do
+        # do get_price and memory it
+        memory_price(next_pair_for_memory_price)
+
         # search request
         tmp_req = @req_que.peek
+        redo if tmp_req.nil?
 
         # found reques, do method
         res = do_method(tmp_req)

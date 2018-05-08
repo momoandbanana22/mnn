@@ -1,4 +1,4 @@
-PROGRAM_VERSION = 'ver.20180506_2218'.freeze
+PROGRAM_VERSION = 'ver.20180508_2046'.freeze
 PROGRAM_NAME = 'mnn'.freeze
 
 # standerd library require
@@ -36,10 +36,15 @@ class Mnn
   end
 
   public def start
+    @bbcc.add_pair('btc_jpy')
+
+    loop do
+      sleep(1)
+    end
 
     ret = @bbcc.request_buy(object_id, 'btc_jpy', 0.0001, 800_000)
     ret = @bbcc.request_cancel_order(object_id, ret[:res])
- 
+
     ret = @bbcc.request_read_balance(object_id)
     puts ret
     ret = @bbcc.request_get_price(object_id, 'btc_jpy')
@@ -71,8 +76,3 @@ end
 # test code
 mnn = Mnn.new
 mnn.start
-
-# run another thread.
-#loop do
-#  sleep(1)
-#end
