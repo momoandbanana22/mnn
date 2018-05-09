@@ -35,17 +35,12 @@ class BbccAPIAccess
   end
 
   private def do_method(req)
-    case req[:method]
-    when READ_BALANCE then read_balance
-    when ORDER then create_order(req[:orderinfo])
-    when READ_ACTIVE_ORDERS then read_active_orders(req[:target_pair])
-    when GET_PRICE then get_price(req[:target_pair])
-    when CANCEL_ORDER then cancel_order(req[:target_pair], req[:order_id])
-    else
-      LOG.error(object_id, self.class.name, __method__,
-                "no method.(#{req[:method]})")
-      nil # return nil
-    end
+    func = METHODS[req[:method]]
+    func.bind(self).call(req)
+  rescue StandardError => exception
+    LOG.error(object_id, self.class.name, __method__,
+              "no method.(#{req[:method]}) ex=#{exception}")
+    nil # return nil
   end
 
   # add pair for get_price
@@ -65,7 +60,8 @@ class BbccAPIAccess
 
   private def memory_price(pair)
     return if pair.nil?
-    @price_memory[pair] = get_price(pair)
+    tmphash = { target_pair: pair }
+    @price_memory[pair] = get_price(tmphash)
   end
 
   private def set_res(req, res)
@@ -146,7 +142,7 @@ class BbccAPIAccess
     res['data']['code'].to_i # return res['data']['code'].to_i
   end
 
-  private def read_balance
+  private def read_balance(_req)
     ret = Hash.new { |h, k| h[k] = {} }
     res = http_read_balance
     return(res) if numeric?(res)
@@ -197,9 +193,9 @@ class BbccAPIAccess
     res['data']['code'].to_i # return res['data']['code'].to_i
   end
 
-  private def create_order(orderinfo)
+  private def create_order(req)
     ret = {}
-    res = http_create_order(orderinfo)
+    res = http_create_order(req[:orderinfo])
     return(res) if numeric?(res)
     res['data'].each do |key, val|
       (ret[key] = val) if key != 'success'
@@ -246,9 +242,9 @@ class BbccAPIAccess
     res['data']['code'].to_i # return res['data']['code'].to_i
   end
 
-  private def read_active_orders(target_pair)
+  private def read_active_orders(req)
     ret = {}
-    res = http_read_active_orders(target_pair)
+    res = http_read_active_orders(req[:target_pair])
     return(res) if numeric?(res)
     res['data'].each do |key, val|
       (ret[key] = val) if key != 'success'
@@ -312,9 +308,9 @@ class BbccAPIAccess
     res['data']['code'].to_i # return res['data']['code'].to_i
   end
 
-  private def get_price(target_pair)
+  private def get_price(req)
     ret = {}
-    res = http_get_price(target_pair)
+    res = http_get_price(req[:target_pair])
     return(res) if numeric?(res)
     res['data'].each do |key, val|
       (ret[key] = val) if key != 'success'
@@ -369,8 +365,8 @@ class BbccAPIAccess
     res['data']['code'].to_i # return res['data']['code'].to_i
   end
 
-  private def cancel_order(target_pair, order_id)
-    res = http_cancel_order(target_pair, order_id)
+  private def cancel_order(req)
+    res = http_cancel_order(req[:target_pair], req[:order_id])
     return(false) if numeric?(res)
     true # return(true)
   end
@@ -382,4 +378,10 @@ class BbccAPIAccess
     add_request(tmphash)
     take_res(objid)
   end
+
+  METHODS = { READ_BALANCE       => BbccAPIAccess.instance_method(:read_balance),
+              ORDER              => BbccAPIAccess.instance_method(:create_order),
+              READ_ACTIVE_ORDERS => BbccAPIAccess.instance_method(:read_active_orders),
+              GET_PRICE          => BbccAPIAccess.instance_method(:get_price),
+              CANCEL_ORDER       => BbccAPIAccess.instance_method(:cancel_order) }.freeze
 end
