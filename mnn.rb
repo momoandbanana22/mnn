@@ -37,10 +37,7 @@ class Mnn
 
   public def start
     @bbcc.add_pair('btc_jpy')
-
-    loop do
-      sleep(1)
-    end
+    @bbcc.add_pair('xrp_jpy')
 
     ret = @bbcc.request_buy(object_id, 'btc_jpy', 0.0001, 800_000)
     ret = @bbcc.request_cancel_order(object_id, ret[:res])
@@ -69,6 +66,9 @@ class Mnn
       puts is_contract
       sleep(0.01)
       break if is_contract == true
+    end
+    loop do
+      sleep(1)
     end
   end
 end
