@@ -36,18 +36,15 @@ class BbccAPIAccess
 
   private def do_method(req)
     case req[:method]
-    when READ_BALANCE then
-      read_balance
-    when ORDER then
-      create_order(req[:orderinfo])
-    when READ_ACTIVE_ORDERS then
-      read_active_orders(req[:target_pair])
-    when GET_PRICE then
-      get_price(req[:target_pair])
-    when CANCEL_ORDER then
-      cancel_order(req[:target_pair], req[:order_id])
+    when READ_BALANCE then read_balance
+    when ORDER then create_order(req[:orderinfo])
+    when READ_ACTIVE_ORDERS then read_active_orders(req[:target_pair])
+    when GET_PRICE then get_price(req[:target_pair])
+    when CANCEL_ORDER then cancel_order(req[:target_pair], req[:order_id])
     else
-      exit(-1)
+      LOG.error(object_id, self.class.name, __method__,
+                "no method.(#{req[:method]})")
+      nil # return nil
     end
   end
 
