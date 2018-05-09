@@ -1,4 +1,4 @@
-PROGRAM_VERSION = 'ver.20180508_2046'.freeze
+PROGRAM_VERSION = 'ver.20180509_2055'.freeze
 PROGRAM_NAME = 'mnn'.freeze
 
 # standerd library require

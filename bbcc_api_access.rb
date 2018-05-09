@@ -8,55 +8,7 @@ require 'ruby_bitbankcc'
 
 # relateve file
 require_relative 'bbcc_info.rb'
-
-# Que class
-class Que
-  public def initialize
-    @lock = Mutex.new
-    @que = [] # empty array
-  end
-  # take top item
-  public def peek
-    return(nil) if @que.empty?
-    @lock.synchronize do
-      return @que[0]
-    end
-  end
-  # take top item with wait
-  public def peek_wait
-    loop do
-      redo if @que.empty?
-      @lock.synchronize do
-        return @que[0]
-      end
-    end
-  end
-  # add item
-  public def push(item)
-    @lock.synchronize do
-      @que.push(item)
-    end
-  end
-  # del item
-  public def shift
-    @lock.synchronize do
-      @que.shift
-    end
-  end
-end
-
-# ResQue class
-class ResQue < Que
-  public def take_res(objid)
-    loop do
-      ret = nil
-      @lock.synchronize { ret = @que.select { |res| res[:objid] == objid } }
-      redo if ret.empty?
-      @lock.synchronize { @que.reject! { |res| res[:objid] == objid } }
-      return ret[0] # return ret[0]
-    end
-  end
-end
+require_relative 'que.rb'
 
 # bitbank api acces class
 class BbccAPIAccess
@@ -83,22 +35,20 @@ class BbccAPIAccess
   end
 
   private def do_method(req)
-    res = nil
     case req[:method]
     when READ_BALANCE then
-      res = read_balance
+      read_balance
     when ORDER then
-      res = create_order(req[:orderinfo])
+      create_order(req[:orderinfo])
     when READ_ACTIVE_ORDERS then
-      res = read_active_orders(req[:target_pair])
+      read_active_orders(req[:target_pair])
     when GET_PRICE then
-      res = get_price(req[:target_pair])
+      get_price(req[:target_pair])
     when CANCEL_ORDER then
-      res = cancel_order(req[:target_pair], req[:order_id])
+      cancel_order(req[:target_pair], req[:order_id])
     else
       exit(-1)
     end
-    res # return res
   end
 
   # add pair for get_price
@@ -109,16 +59,23 @@ class BbccAPIAccess
   # get next pair for get_price/memory_price
   private def next_pair_for_memory_price
     return(nil) if @target_pairs.nil?
-    @current_pair_for_inc_pair = 0 if @current_pair_for_inc_pair.nil?
-    @current_pair_for_inc_pair = 0 if @target_pairs.size <= @current_pair_for_inc_pair
-    ret = @target_pairs[@current_pair_for_inc_pair]
-    @current_pair_for_inc_pair += 1
+    @target_pair_idx = 0 if @target_pair_idx.nil?
+    @target_pair_idx = 0 if @target_pairs.size <= @target_pair_idx
+    ret = @target_pairs[@target_pair_idx]
+    @target_pair_idx += 1
     ret # return(ret)
   end
 
   private def memory_price(pair)
     return if pair.nil?
     @price_memory[pair] = get_price(pair)
+  end
+
+  private def set_res(req, res)
+    tmphash = { res_time: Time.now.to_f, req_time: req[:req_time],
+                objid: req[:objid], res: res }
+    @res_que.push(tmphash)
+    @req_que.shift
   end
 
   private def thread_start
@@ -128,17 +85,14 @@ class BbccAPIAccess
         memory_price(next_pair_for_memory_price)
 
         # search request
-        tmp_req = @req_que.peek
-        redo if tmp_req.nil?
+        req = @req_que.peek
+        redo if req.nil?
 
         # found reques, do method
-        res = do_method(tmp_req)
+        res = do_method(req)
 
         # add responce, del req_que
-        tmphash = { res_time: Time.now.to_f, req_time: tmp_req[:req_time],
-                    objid: tmp_req[:objid], res: res }
-        @res_que.push(tmphash)
-        @req_que.shift
+        set_res(req, res)
       end
     end
   end
