@@ -255,7 +255,7 @@ class Agent
   public def baibai
     @mythread = Thread.start do
       loop do
-        sleep(0.000001)
+        # sleep(0.000001)
         if @to_stop && !@stopped
           disp = "#{DateTime.now} #{object_id} #{@target_pair} stopping..."
           puts(disp)
