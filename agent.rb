@@ -49,6 +49,7 @@ class Agent
 
   private def do_getprice
     @coin_price = BBCC.price_memory[@target_pair]
+    return if @coin_price.nil?
     @current_status.next
   end
 
@@ -59,10 +60,10 @@ class Agent
 
   private def do_calcbuyamount
     tukau = @buy_amount_atonetime.to_f
-    coin = @target_pair.split('_')[1]
-    freeamount = @amount[:res][coin]['free_amount'].to_f
+    # coin = @target_pair.split('_')[1]
+    # freeamount = @amount[:res][coin]['free_amount'].to_f
     @target_buy_amount = tukau.to_f / @target_buy_price.to_f
-    @target_buy_amount = freeamount if @target_buy_amount > freeamount
+    # @target_buy_amount = freeamount if @target_buy_amount > freeamount
     @current_status.next
   end
 
@@ -201,7 +202,7 @@ class Agent
 
   STATE_TABLE = {
     StatusValues::INITSTATUS        => Agent.instance_method(:do_initstatus),
-    StatusValues::GET_MYAMOUNT      => Agent.instance_method(:do_getmyamount),
+#    StatusValues::GET_MYAMOUNT      => Agent.instance_method(:do_getmyamount),
     StatusValues::GET_PRICE         => Agent.instance_method(:do_getprice),
     StatusValues::CALC_BUYPRICE     => Agent.instance_method(:do_calcbuyprice),
     StatusValues::CALC_BUYAMOUNT    => Agent.instance_method(:do_calcbuyamount),

@@ -19,7 +19,7 @@ end
 class Status
   STATUS_NAMES = {
     StatusValues::INITSTATUS        => '初期状態',
-    StatusValues::GET_MYAMOUNT      => '残高取得中',
+#    StatusValues::GET_MYAMOUNT      => '残高取得中',
     StatusValues::GET_PRICE         => '現在価格取得',
     StatusValues::CALC_BUYPRICE     => '購入価格計算',
     StatusValues::CALC_BUYAMOUNT    => '購入数量計算',
@@ -41,8 +41,9 @@ class Status
   end
 
   NEXT = {
-    StatusValues::INITSTATUS       => StatusValues::GET_MYAMOUNT,
-    StatusValues::GET_MYAMOUNT     => StatusValues::GET_PRICE,
+#    StatusValues::INITSTATUS       => StatusValues::GET_MYAMOUNT,
+#    StatusValues::GET_MYAMOUNT     => StatusValues::GET_PRICE,
+    StatusValues::INITSTATUS       => StatusValues::GET_PRICE,
     StatusValues::GET_PRICE        => StatusValues::CALC_BUYPRICE,
     StatusValues::CALC_BUYPRICE    => StatusValues::CALC_BUYAMOUNT,
     StatusValues::CALC_BUYAMOUNT   => StatusValues::ORDER_BUY,
@@ -52,8 +53,10 @@ class Status
     StatusValues::CALC_SELLAMOUNT  => StatusValues::ORDER_SELL,
     StatusValues::ORDER_SELL       => StatusValues::WAIT_SELL,
     StatusValues::WAIT_SELL        => StatusValues::DISP_PROFITS,
-    StatusValues::DISP_PROFITS     => StatusValues::GET_MYAMOUNT,
-    StatusValues::CANCEL_BUYORDER  => StatusValues::GET_MYAMOUNT,
+#    StatusValues::DISP_PROFITS     => StatusValues::GET_MYAMOUNT,
+    StatusValues::DISP_PROFITS     => StatusValues::GET_PRICE,
+#    StatusValues::CANCEL_BUYORDER  => StatusValues::GET_MYAMOUNT,
+    StatusValues::CANCEL_BUYORDER  => StatusValues::GET_PRICE,
     StatusValues::CANCEL_SELLORDER => StatusValues::CALC_SELLPRICE
   }.freeze
 

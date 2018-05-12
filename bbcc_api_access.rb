@@ -110,6 +110,7 @@ class BbccAPIAccess
   READ_BALANCE = 'read_balance'.freeze
 
   private def api_read_balance
+    # print(' read_balance ')
     JSON.parse(@bbcc.read_balance)
   rescue StandardError => exception
     LOG.fatal(object_id, self.class.name, __method__, exception.to_s)
@@ -159,6 +160,7 @@ class BbccAPIAccess
   ORDER = 'order'.freeze
 
   private def api_create_order(orderinfo)
+    # print(' create_order ')
     JSON.parse(@bbcc.create_order(orderinfo[:target_pair], orderinfo[:amount],
                                   orderinfo[:price], orderinfo[:side],
                                   orderinfo[:type]))
@@ -210,6 +212,7 @@ class BbccAPIAccess
   READ_ACTIVE_ORDERS = 'read_active_orders'.freeze
 
   private def api_read_active_orders(target_pair)
+    # print(' read_active_orders ')
     JSON.parse(@bbcc.read_active_orders(target_pair))
   rescue StandardError => exception
     LOG.fatal(object_id, self.class.name, __method__, exception.to_s)
@@ -276,6 +279,7 @@ class BbccAPIAccess
   GET_PRICE = 'get_price'.freeze
 
   private def api_get_price(target_pair)
+    # print(' read_ticker ')
     JSON.parse(@bbcc.read_ticker(target_pair))
   rescue StandardError => exception
     LOG.fatal(object_id, self.class.name, __method__, exception.to_s)
@@ -333,6 +337,7 @@ class BbccAPIAccess
   CANCEL_ORDER = 'cancel_order'.freeze
 
   private def api_cancel_order(target_pair, order_id)
+    # print(' cancel_order ')
     JSON.parse(@bbcc.cancel_order(target_pair, order_id))
   rescue StandardError => exception
     LOG.fatal(object_id, self.class.name, __method__, exception.to_s)
