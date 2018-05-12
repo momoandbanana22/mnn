@@ -3,7 +3,7 @@ btc_jpy:
     buy: 1
     sell: 3
 
-  buy_amount_atonetime: 1000 # JPY
+  buy_amount_atonetime: 5000 # JPY
   magnification: 1.0001
 
 xrp_jpy:
