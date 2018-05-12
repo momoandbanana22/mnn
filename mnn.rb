@@ -1,4 +1,4 @@
-PROGRAM_VERSION = 'ver.20180512_1819'.freeze
+PROGRAM_VERSION = 'ver.20180512_1934'.freeze
 PROGRAM_NAME = 'mnn'.freeze
 
 # standerd library require
@@ -51,6 +51,14 @@ class Mnn
     @agents.each do |agent|
       agent.to_stop
     end
+  end
+
+  public def allstopped?
+    somerunning = false
+    @agents.each do |agent|
+      somerunning |= !agent.stopped?
+    end
+    !somerunning # allstopeed
   end
 end
 

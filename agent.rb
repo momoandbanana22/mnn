@@ -33,6 +33,7 @@ class Agent
     read_setting
     @to_stop = false
     @stopped = false
+    @lasterrorcode = 0
   end
 
   attr_reader :target_pair
@@ -80,13 +81,18 @@ class Agent
     res = @my_buy_order_info[:res]
     if numeric?(res)
       # errir detect
-      disp += " err:#{res} buy_order"
-      @current_status.set(StatusValues::GET_PRICE) if retcode > 60_000
+      if @lasterrorcode != res
+        @lasterrorcode = res
+        disp += " err:#{res} buy_order"
+        puts(disp)
+      end
+      @current_status.set(StatusValues::GET_PRICE) if res > 60_000
     else
+      @lasterrorcode = 0
       disp += " OK 数量:#{res['start_amount']} 金額:#{res['price']} buy_order"
+      puts(disp)
       @current_status.next
     end
-    puts(disp)
   end
 
   private def do_waitorderbuy
@@ -123,8 +129,10 @@ class Agent
     res = @my_sell_order_info[:res]
     if numeric?(res)
       # error detect. but cant rescure.
-      disp += " err:#{res} sellorder"
-      sleep(0.1)
+      if @lasterrordere != res
+        @lasterrorcode = res
+        disp += " err:#{res} sellorder"
+      end
     else
       disp += " OK 数量:#{res['start_amount']} 金額:#{res['price']} sellorder"
       @current_status.next
@@ -223,5 +231,9 @@ class Agent
 
   public def to_stop
     @to_stop = true
+  end
+
+  public def stopped?
+    @stopped
   end
 end

@@ -9,4 +9,4 @@ random:
   end:  3
 
 # agents
-agents: ["btc_jpy","btc_jpy","btc_jpy","btc_jpy","btc_jpy"]
+agents: ["btc_jpy","bcc_jpy","btc_jpy","bcc_jpy","btc_jpy","bcc_jpy","btc_jpy","bcc_jpy","btc_jpy","bcc_jpy"]
