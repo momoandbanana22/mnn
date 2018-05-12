@@ -76,11 +76,11 @@ class Agent
       puts(disp)
     end
     return if @stopped
-    disp = "#{DateTime.now} #{object_id} #{target_pair}"
     @my_buy_order_info = BBCC.request_buy(object_id,
                                           @target_pair,
                                           @target_buy_amount,
                                           @target_buy_price)
+    disp = "#{DateTime.now} #{object_id} #{target_pair}"
     res = @my_buy_order_info[:res]
     if numeric?(res)
       # errir detect
@@ -138,11 +138,11 @@ class Agent
   end
 
   private def do_ordersell
-    disp = "#{DateTime.now} #{object_id} #{target_pair}"
     @my_sell_order_info = BBCC.request_sell(object_id,
                                             @target_pair,
                                             @target_sell_amount,
                                             @target_sell_price)
+    disp = "#{DateTime.now} #{object_id} #{target_pair}"
     res = @my_sell_order_info[:res]
     if numeric?(res)
       # error detect. but cant rescure.
