@@ -4,7 +4,7 @@
 ## はじめに
 __無保証__ です。
 
-未完成です。作りながら更新していきます。まだ、 __今は残高を表示し、BTCを現在価格で0.001BTC購入注文出し、約定するまで待ち、現在価格+1000円で0.001BTC販売注文を出し、約定するまで待つ__ だけです。
+未完成です。作りながら更新していきます。まだ、 __今はBTCを5,000円分買って、1.0005倍になったら売る__ だけです。
 
 ### これは何？
 このプログラムは、[BitBank](https://bitbank.cc/)で、暗号通貨を売買して利益を出そうとするプログラムです。
@@ -28,12 +28,26 @@ __無保証__ です。
 暗号通貨を買います。買った値段の[1.0005]倍の価格で売ります。この動きを繰り返すだけの簡単な仕組みです。
 
 ## 使い方
-apikey.yamlというファイルを作成して、bitbankのAPIキーを設定して、mnn.rbを実行してください
+apikey.yamlというファイルを作成して、bitbankのAPIキーを設定して、mnn.rbを実行してください。
 
 下記にapikey.yamlのサンプルを示します。
 ~~~yaml
 apikey: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 seckey: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+~~~
+
+Slackに通知を行う場合は、WebHookを設定して、そのURLとKEYを slackSetting.yaml ファイルに設定を記載してください。
+
+下記に slackSetting.yaml のサンプルを示します。
+~~~yaml
+# ↓slackに関する設定
+slack:
+  use: true
+# ↑slack通知を使うかどうか true/false
+  webhookURL: "https://hooks.slack.com/services/XXXXXXXXX/XXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXX"
+# ↑slackの通知のWebhook URL
+  botAPItoken: "XXXX-XXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXX"
+# ↑slackのボットのAPI Token
 ~~~
 
 ## 注意事項

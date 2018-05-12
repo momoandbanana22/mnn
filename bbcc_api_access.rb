@@ -45,7 +45,7 @@ class BbccAPIAccess
 
   # add pair for get_price
   public def add_pair(pair)
-    @target_pairs.push(pair)
+    @target_pairs.push(pair) unless @target_pairs.include?(pair)
   end
 
   # get next pair for get_price/memory_price
@@ -101,15 +101,6 @@ class BbccAPIAccess
 
   private def take_res(objid)
     @res_que.take_res(objid)
-  end
-
-  private def numeric?(value)
-    return(true) if value.is_a?(Numeric)
-    return(true) if Integer(value)
-    return(true) if Float(value)
-    false # return false
-  rescue StandardError
-    false # return false
   end
 
   ##########
@@ -379,9 +370,11 @@ class BbccAPIAccess
     take_res(objid)
   end
 
-  METHODS = { READ_BALANCE       => BbccAPIAccess.instance_method(:read_balance),
-              ORDER              => BbccAPIAccess.instance_method(:create_order),
-              READ_ACTIVE_ORDERS => BbccAPIAccess.instance_method(:read_active_orders),
-              GET_PRICE          => BbccAPIAccess.instance_method(:get_price),
-              CANCEL_ORDER       => BbccAPIAccess.instance_method(:cancel_order) }.freeze
+  METHODS = {
+    READ_BALANCE       => BbccAPIAccess.instance_method(:read_balance),
+    ORDER              => BbccAPIAccess.instance_method(:create_order),
+    READ_ACTIVE_ORDERS => BbccAPIAccess.instance_method(:read_active_orders),
+    GET_PRICE          => BbccAPIAccess.instance_method(:get_price),
+    CANCEL_ORDER       => BbccAPIAccess.instance_method(:cancel_order)
+  }.freeze
 end

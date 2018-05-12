@@ -1,0 +1,7 @@
+btc_jpy:
+  max_orderwait:
+    buy: 1
+    sell: 3
+
+  buy_amount_atonetime: 5000 # jpy
+  magnification: 1.0005
