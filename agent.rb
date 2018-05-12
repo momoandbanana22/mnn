@@ -1,3 +1,5 @@
+STDOUT.sync = true
+
 # standerd library require
 require 'date'
 
