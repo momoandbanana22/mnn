@@ -70,9 +70,8 @@ class Agent
                                           @target_buy_price)
     if numeric?(@my_buy_order_info[:res])
       # errir detect
-      if @my_buy_order_info[:res] > 60_000
-        @current_status.current_status = StatusValues::GET_PRICE
-      end
+      retcode = @my_buy_order_info[:res]
+      @current_status.set(StatusValues::GET_PRICE) if retcode > 60_000
     else
       @current_status.next
     end
@@ -86,11 +85,9 @@ class Agent
     @coin_price = BBCC.price_memory[@target_pair]
     @target_sell_price = @target_buy_price.to_f * @magnification
     market_price = (@coin_price['sell'].to_f + @coin_price['last'].to_f) / 2
-    market_price /= @magnification
+    # market_price /= @magnification
     if @target_sell_price < market_price
-      diff = market_price - @target_sell_price
-      diff *= 0.9
-      market_price = @target_sell_price + diff
+      # @target_sell_price += (market_price - @target_sell_price) * 0.9
       @target_sell_price = market_price
     end
     @current_status.next
@@ -121,20 +118,20 @@ class Agent
   private def read_total_profits
     YAML.load_file(TOTAL_PROFITS_FILENAME)
   rescue
-    {}
+    {} # return empty hash
   end
 
   private def add_profit(unite_name, profit)
+    moto = 0
     total_profits = read_total_profits
     if total_profits[unite_name].nil?
       total_profits['create_datetime'] = DateTime.now.to_s
-      total_profits[unite_name] = profit
     else
-      total_profits[unite_name] = total_profits[unite_name].to_f + profit
+      moto = total_profits[unite_name].to_f
     end
-    File.open(TOTAL_PROFITS_FILENAME, 'w') do |f|
-      YAML.dump(total_profits, f)
-    end
+    total_profits[unite_name] = moto + profit
+    File.open(TOTAL_PROFITS_FILENAME, 'w') { |f| YAML.dump(total_profits, f) }
+    ret # return ret
   end
 
   private def do_dispprofits
@@ -145,17 +142,17 @@ class Agent
 
     coin = @target_pair.split('_')[1].to_s
 
-    sell = @my_sell_order_info[:res]['price'].to_f
-    sell *= @my_sell_order_info[:res]['start_amount'].to_f
+    sellres = @my_sell_order_info[:res]
+    sell = sellres['price'].to_f * sellres['start_amount'].to_f
 
-    buy = @my_buy_order_info[:res]['price'].to_f
-    buy *= @my_buy_order_info[:res]['start_amount'].to_f
+    buyres = @my_buy_order_info[:res]
+    buy = buyres['price'].to_f * buyres['start_amount'].to_f
 
     current_profits = sell.to_f - buy.to_f
 
-    add_profit(coin, current_profits)
+    total = add_profit(coin, current_profits)
 
-    disp_str = "合計:#{read_total_profits[coin]} #{coin} 今回:#{current_profits}"
+    disp_str = "合計:#{total} #{coin} 今回:#{current_profits}"
     print(' ' + disp_str + "\r\n")
 
     LOG.info(object_id, self.class.name, __method__, disp_str)

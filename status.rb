@@ -61,6 +61,10 @@ class Status
     @current_status = NEXT[@current_status]
   end
 
+  public def set(newstatus)
+    @current_status = newstatus
+  end
+
   public def to_s
     STATUS_NAMES[@current_status]
   end
