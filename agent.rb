@@ -199,7 +199,7 @@ class Agent
     StatusValues::CANCEL_SELLORDER  => Agent.instance_method(:do_cancelsell)
   }.freeze
 
-  public def baiba
+  public def baibai
     @mythread = Thread.start do
       loop do
         func = STATE_TABLE[@current_status.current_status]

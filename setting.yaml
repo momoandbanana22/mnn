@@ -7,3 +7,6 @@ log:
 random:
   start: 1
   end:  3
+
+# agents
+agents: ["btc_jpy","btc_jpy","btc_jpy","btc_jpy","btc_jpy"]
