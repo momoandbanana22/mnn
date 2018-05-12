@@ -32,6 +32,7 @@ class Agent
     @trend = Trend.new(target_pair) if @trend.nil?
     read_setting
     @to_stop = false
+    @stopped = false
   end
 
   attr_reader :target_pair
@@ -65,6 +66,12 @@ class Agent
   end
 
   private def do_orderbuy
+    if @to_stop && !@stopped
+      @stopped = true
+      disp = "#{DateTime.now} #{object_id} #{target_pair} buy stop."
+      puts(disp)
+    end
+    return if @stopped
     disp = "#{DateTime.now} #{object_id} #{target_pair}"
     @my_buy_order_info = BBCC.request_buy(object_id,
                                           @target_pair,
@@ -83,10 +90,6 @@ class Agent
   end
 
   private def do_waitorderbuy
-    if @to_stop
-      puts('buy stop')
-      return
-    end
     @current_status.next if BBCC.contract?(object_id, @my_buy_order_info[:res])
   end
 
@@ -97,6 +100,10 @@ class Agent
     # market_price /= @magnification
     if @target_sell_price < market_price
       # @target_sell_price += (market_price - @target_sell_price) * 0.9
+      disp = "#{DateTime.now} #{object_id} #{target_pair} calc_sell_price "
+      disp += "#{@target_sell_price}->#{market_price}"
+      disp += "[#{(market_price - @target_sell_price)}]"
+      puts(disp)
       @target_sell_price = market_price
     end
     @current_status.next
@@ -126,10 +133,12 @@ class Agent
   end
 
   private def do_waitordersell
-    if @to_stop
-      puts('sell stop')
-      return
+    if @to_stop && !@stopped
+      @stopped = true
+      disp = "#{DateTime.now} #{object_id} #{target_pair} sell stop."
+      puts(disp)
     end
+    return if @stopped
     @current_status.next if BBCC.contract?(object_id, @my_sell_order_info[:res])
   end
 
@@ -202,6 +211,10 @@ class Agent
   public def baibai
     @mythread = Thread.start do
       loop do
+        if @to_stop && !@stopped
+          disp = "#{DateTime.now} #{object_id} #{@target_pair} stopping..."
+          puts(disp)
+        end
         func = STATE_TABLE[@current_status.current_status]
         func.bind(self).call
       end

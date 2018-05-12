@@ -3,5 +3,61 @@ btc_jpy:
     buy: 1
     sell: 3
 
-  buy_amount_atonetime: 1000 # jpy
+  buy_amount_atonetime: 1000 # JPY
+  magnification: 1.0001
+
+xrp_jpy:
+  max_orderwait:
+    buy: 1
+    sell: 3
+
+  buy_amount_atonetime: 1000 # JPY
+  magnification: 1.0001
+
+ltc_btc:
+  max_orderwait:
+    buy: 1
+    sell: 3
+
+  buy_amount_atonetime: 0.001 # BTC -> 1000[JPY]÷1000000[JPY/BTC] = 0.001[BTC] <- JPYでの使う金額[JPY] ÷ BTC価格[JPC/BTC] = BTCでの使う金額
+  magnification: 1.0001
+
+eth_btc:
+  max_orderwait:
+    buy: 1
+    sell: 3
+
+  buy_amount_atonetime: 0.001 # BTC -> 1000[JPY]÷1000000[JPY/BTC] = 0.001[BTC] <- JPYでの使う金額[JPY] ÷ BTC価格[JPC/BTC] = BTCでの使う金額
+  magnification: 1.0001
+
+mona_jpy:
+  max_orderwait:
+    buy: 1
+    sell: 3
+
+  buy_amount_atonetime: 1000 # JPY
+  magnification: 1.0001
+
+mona_btc:
+  max_orderwait:
+    buy: 1
+    sell: 3
+
+  buy_amount_atonetime: 0.001 # BTC -> 1000[JPY]÷1000000[JPY/BTC] = 0.001[BTC] <- JPYでの使う金額[JPY] ÷ BTC価格[JPC/BTC] = BTCでの使う金額
+  magnification: 1.0001
+
+bcc_jpy:
+  max_orderwait:
+    buy: 1
+    sell: 3
+
+  buy_amount_atonetime: 1000 # JPY
+  magnification: 1.0001
+
+bcc_btc:
+  max_orderwait:
+    buy: 1
+    sell: 3
+
+  buy_amount_atonetime: 0.001 # BTC -> 1000[JPY]÷1000000[JPY/BTC] = 0.001[BTC] <- JPYでの使う金額[JPY] ÷ BTC価格[JPC/BTC] = BTCでの使う金額
   magnification: 1.0001
