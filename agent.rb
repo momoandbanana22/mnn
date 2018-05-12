@@ -89,6 +89,7 @@ class Agent
       end
       @current_status.set(StatusValues::GET_PRICE) if res > 60_000
     else
+      @order_count = 0
       @lasterrorcode = 0
       disp += " OK 数量:#{res['start_amount']} 金額:#{res['price']} buy_order"
       puts(disp)
@@ -97,7 +98,20 @@ class Agent
   end
 
   private def do_waitorderbuy
-    @current_status.next if BBCC.contract?(object_id, @my_buy_order_info[:res])
+    contracted = BBCC.contract?(object_id, @my_buy_order_info[:res])
+    if contracted
+      @current_status.next
+      return
+    end
+    # not contracted
+    if @order_count > @max_order_wait[:buy]
+      # retry out
+      @current_status.set(StatusValues::CANCEL_BUYORDER)
+      disp = "#{DateTime.now} #{object_id} #{target_pair} orderbuy retryout."
+      puts(disp)
+      return
+    end
+    @order_count += 1
   end
 
   private def do_calcsellprice
@@ -135,6 +149,8 @@ class Agent
         disp += " err:#{res} sellorder"
       end
     else
+      @order_count = 0
+      @lasterrorcode = 0
       disp += " OK 数量:#{res['start_amount']} 金額:#{res['price']} sellorder"
       @current_status.next
     end
@@ -148,7 +164,20 @@ class Agent
       puts(disp)
     end
     return if @stopped
-    @current_status.next if BBCC.contract?(object_id, @my_sell_order_info[:res])
+    contracted = BBCC.contract?(object_id, @my_sell_order_info[:res])
+    if contracted
+      @current_status.next
+      return
+    end
+    # not contracted
+    if @order_count > @max_order_wait[:sell]
+      # retry out
+      @current_status.set(StatusValues::CANCEL_SELLORDER)
+      disp = "#{DateTime.now} #{object_id} #{target_pair} ordersell retyuout."
+      puts(disp)
+      return
+    end
+    @order_count += 1
   end
 
   private def read_total_profits
@@ -195,9 +224,13 @@ class Agent
   end
 
   private def do_cancelbuy
+    cancelled = BBCC.request_cancel_order(object_id, @my_buy_order_info[:res])
+    @current_status.next if cancelled
   end
 
   private def do_cancelsell
+    cancelled = BBCC.request_cancel_order(object_id, @my_sell_order_info[:res])
+    @current_status.next if cancelled
   end
 
   STATE_TABLE = {
