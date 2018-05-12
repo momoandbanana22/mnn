@@ -36,7 +36,7 @@ apikey: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 seckey: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ~~~
 
-Slackに通知を行う場合は、WebHookを設定して、そのURLとKEYを slackSetting.yaml ファイルに設定を記載してください。
+Slackに通知を行う場合は、WebHook URLとBOT API TokenをslackSetting.yaml ファイルに設定を記載してください。(SlackのWebHook URLを取得するには、[ここ](https://qiita.com/vmmhypervisor/items/18c99624a84df8b31008)が参考になると思います。)
 
 下記に slackSetting.yaml のサンプルを示します。
 ~~~yaml

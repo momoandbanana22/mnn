@@ -31,6 +31,7 @@ class Agent
     @current_status = Status.new
     @trend = Trend.new(target_pair) if @trend.nil?
     read_setting
+    @to_stop = false
   end
 
   attr_reader :target_pair
@@ -64,20 +65,28 @@ class Agent
   end
 
   private def do_orderbuy
+    disp = "#{DateTime.now} #{object_id} #{target_pair}"
     @my_buy_order_info = BBCC.request_buy(object_id,
                                           @target_pair,
                                           @target_buy_amount,
                                           @target_buy_price)
-    if numeric?(@my_buy_order_info[:res])
+    res = @my_buy_order_info[:res]
+    if numeric?(res)
       # errir detect
-      retcode = @my_buy_order_info[:res]
+      disp += " err:#{res} buy_order"
       @current_status.set(StatusValues::GET_PRICE) if retcode > 60_000
     else
+      disp += " OK 数量:#{res['start_amount']} 金額:#{res['price']} buy_order"
       @current_status.next
     end
+    puts(disp)
   end
 
   private def do_waitorderbuy
+    if @to_stop
+      puts('buy stop')
+      return
+    end
     @current_status.next if BBCC.contract?(object_id, @my_buy_order_info[:res])
   end
 
@@ -99,19 +108,28 @@ class Agent
   end
 
   private def do_ordersell
+    disp = "#{DateTime.now} #{object_id} #{target_pair}"
     @my_sell_order_info = BBCC.request_sell(object_id,
                                             @target_pair,
                                             @target_sell_amount,
                                             @target_sell_price)
-    if numeric?(@my_sell_order_info[:res])
+    res = @my_sell_order_info[:res]
+    if numeric?(res)
       # error detect. but cant rescure.
+      disp += " err:#{res} sellorder"
       sleep(0.1)
     else
+      disp += " OK 数量:#{res['start_amount']} 金額:#{res['price']} sellorder"
       @current_status.next
     end
+    puts(disp)
   end
 
   private def do_waitordersell
+    if @to_stop
+      puts('sell stop')
+      return
+    end
     @current_status.next if BBCC.contract?(object_id, @my_sell_order_info[:res])
   end
 
@@ -131,14 +149,11 @@ class Agent
     end
     total_profits[unite_name] = moto + profit
     File.open(TOTAL_PROFITS_FILENAME, 'w') { |f| YAML.dump(total_profits, f) }
-    ret # return ret
+    total_profits[unite_name] # return ret
   end
 
   private def do_dispprofits
-    print(DateTime.now)
-    print(' ' + object_id.to_s)
-    print(' ' + @target_pair)
-    print(' ' + '利益表示')
+    disp1 = "#{DateTime.now} #{object_id} #{@target_pair} 利益表示 "
 
     coin = @target_pair.split('_')[1].to_s
 
@@ -152,11 +167,11 @@ class Agent
 
     total = add_profit(coin, current_profits)
 
-    disp_str = "合計:#{total} #{coin} 今回:#{current_profits}"
-    print(' ' + disp_str + "\r\n")
+    disp2 = "合計:#{total} #{coin} 今回:#{current_profits}"
+    print(disp1 + disp2 + "\r\n")
 
-    LOG.info(object_id, self.class.name, __method__, disp_str)
-    MySlack.instance.post(disp_str)
+    LOG.info(object_id, self.class.name, __method__, disp2)
+    MySlack.instance.post(disp2)
 
     @current_status.next
   end
@@ -191,5 +206,9 @@ class Agent
         func.bind(self).call
       end
     end
+  end
+
+  public def to_stop
+    @to_stop = true
   end
 end
