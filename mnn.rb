@@ -1,8 +1,6 @@
 PROGRAM_VERSION = 'ver.20180512_2155'.freeze
 PROGRAM_NAME = 'mnn'.freeze
 
-STDOUT.sync = true
-
 # standerd library require
 require 'logger'
 

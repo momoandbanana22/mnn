@@ -1,5 +1,3 @@
-STDOUT.sync = true
-
 # standerd library require
 require 'date'
 
@@ -255,7 +253,7 @@ class Agent
   public def baibai
     @mythread = Thread.start do
       loop do
-        sleep(0.000001) # 1uS
+        sleep(0.0001) # 100uS
         if @to_stop && !@stopped
           disp = "#{DateTime.now} #{object_id} #{@target_pair} stopping..."
           puts(disp)
